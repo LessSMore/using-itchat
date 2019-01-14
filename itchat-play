@@ -1,0 +1,77 @@
+## -*- coding: gb2312 -*-
+import itchat
+import requests
+from apscheduler.schedulers.blocking import BlockingScheduler#定时,代码延后执行
+import time
+
+KEY = ''            #此处需要加上你的图灵机器人KEY
+
+def get_response(msg):        #从机器人那儿得到reply
+    apiUrl = 'http://www.tuling123.com/openapi/api'
+    data = {
+	'key' : KEY,
+	'info' : msg,
+	'userid' : 'wechat-robot',
+    }
+    try:
+        r = requests.post(apiUrl, data=data).json()
+        return r.get('text')
+    except:
+        return
+
+@itchat.msg_register([itchat.content.TEXT, PICTURE, RECORDING, ATTACHMENT, VIDEO],isFriendChat=True)#注册消息，收到这些消息时，调用下面的函数
+def tuling_reply(msg):
+    msg_type = msg['Type']        #查看消息类型
+
+    defaultReply = 'i got to sleep...'    #默认输出消息
+
+    NOW_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())#格式化本地time
+
+    if msg['Type'] == 'Text':
+        print(msg['FromUserName']+"said to you: "+msg['Text']+"in "+NOW_time)#返回别人的话
+        if msg['Content'] == u'你是猪':    #特殊处理特殊语句
+            itchat.send_msg('猪你大爷SB滚',msg['FromUserName'])
+            return
+        reply = get_response(msg['Text'])    #机器回复
+        print("you are going to reply: "+reply)
+        time.sleep(2)
+        return reply or defaultReply#返回给对方
+    elif msg['Type'] == 'Picture':
+        
+    return
+
+#登录后调用
+def after_login():
+    Make_Schedule()#开启定时任务
+    print("您已登录，开始图灵自动回复")
+
+#用函数退出后调用
+def after_logout():
+    print("调用了退出函数，您已退出网页微信")
+
+#自定义发送消息,供修改(name—对方微信名,the_msg—你要发的消息)
+def send_msg():
+
+    user_info = itchat.search_friends(name='不忘初心')#得到好友信息(name是微信名)
+    if len(user_info) > 0:
+
+        user_name = user_info[0]['UserName']#提取信息中的UserName(实际是一串码)
+        the_msg='siki!'
+        print("you are going to say: "+the_msg)
+        itchat.send_msg(the_msg, toUserName=user_name)#给user_name发送信息
+
+#添加日程,在after_login()中调用
+def Make_Schedule():
+    sched.add_job(send_msg, 'cron', year=2019, month=1, day=14, hour=15, minute=14, second=0)#cron是为了能够指定具体某个时间(从年到秒上)
+    sched.start()
+
+if __name__ == '__main__':
+    sched = BlockingScheduler()#当应用程序中只有调度器时使用(在添加定时任务前)
+
+    itchat.auto_login(hotReload=True,loginCallback=after_login, exitCallback=after_logout)#三个参数：短期登录无验证，登录回调，itchat.logout()退出回调
+
+    time.sleep(2)#程序执行到这儿暂停两秒
+
+    #itchat.send_image('cat.jpg',user_name)#发送图片,和hehe.py一个文件夹内就能发
+
+    itchat.run()
